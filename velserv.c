@@ -111,7 +111,7 @@ void *sock_to_com()
 	   memset(&recv_data, 0, sizeof(recv_data)); // clear data buffer
 
 	   // wait for data to receive from socket (blocking option)
-	   bytes_recieved=recv(sock,recv_data,1,0);
+	   bytes_recieved = recv(sock,recv_data,1,0);
 	   
 	   if (bytes_recieved > 0)
 	   {  // if we got some data
@@ -159,7 +159,11 @@ void *sock_to_com()
 				m = m + 1;
 			}
 		}
-		else{
+		else
+		{
+			// If (blocking) recv returns with number < 1, something is wrong. 
+			//  0 = the peer has performed an orderly shutdown of the connection.
+			// -1 = other type of error
 			keep_running = 0;
 		}
 		
