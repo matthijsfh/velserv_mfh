@@ -22,9 +22,10 @@ Thank you */
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <pthread.h>
+#include <signal.h> // Include for signal handling
 
 #define BAUDRATE B38400
-#define MODEMDEVICE "/dev/ttyACM0"
+#define MODEMDEVICE "/dev/ttyUSB_VELBUS"
 #define IP "127.0.0.1"
 #define _POSIX_SOURCE 1         //POSIX compliant source
 #define FALSE 0
@@ -39,7 +40,9 @@ int client_on = 1;
 
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 int fd, sock;
-int foreground=0,verbose=0;
+int foreground=0,verbose=4;
+
+volatile sig_atomic_t keep_running = 1;
 
 /*	Routine to display the data a bit more nicely formatted
 */
@@ -156,26 +159,27 @@ void *sock_to_com()
 				m = m + 1;
 			}
 		}
+		else{
+			keep_running = 0;
+		}
 		
 		if (valid == 1)
 		{
 			// do some display to debug
 			if (verbose==2)
 			{
-				fprintf(stdout,"COM <- PC: ");
+				fprintf(stdout,"BUS <- PC: ");
 				disp_data_full(buffer,(bytes_in_string+1));
 			}
 			if (verbose==3)
 			{
-				fprintf(stdout,"COM <- PC: ");
+				fprintf(stdout,"BUS <- PC: ");
 				disp_data(buffer,(bytes_in_string+1));
 			}
-			// write the data to the interface and wait for 60000µs
+			// write the data to the interface and wait for 60000ï¿½s
 			write(fd,buffer,(bytes_in_string+1));
 			usleep(60000);
 		}	
-
-
 	}
 }
 
@@ -245,15 +249,15 @@ void *com_to_sock()
 			// do some display to debug
 			if (verbose==2)
 			{
-				fprintf(stdout,"COM -> PC: ");
+				fprintf(stdout,"BUS -> PC: ");
 				disp_data_full(buffer,(bytes_in_string+1));
 			}
 			if (verbose==3)
 			{
-				fprintf(stdout,"COM -> PC: ");
+				fprintf(stdout,"BUS -> PC: ");
 				disp_data(buffer,(bytes_in_string+1));
 			}
-			// write the data to the interface and wait for 60000µs
+			// write the data to the interface and wait for 60000ï¿½s
 			send(sock,buffer,(bytes_in_string+1), 0);
 			//usleep(10000);
 		}	
@@ -817,28 +821,33 @@ signal(SIGPIPE, SIG_IGN);
             exit(EXIT_FAILURE);
         }
         
-     
 		iret1 = pthread_create( &thread1, NULL, sock_to_com, NULL);
 		iret2 = pthread_create( &thread2, NULL, com_to_sock, NULL);
 	}
 	
-    while (1) 
+    while (keep_running == 1) 
 	{
 		/* Do some task here ... */
-        sleep(30); /* wait 30 seconds */
+        sleep(1); /* wait 30 seconds */
     }
-	
+
+	fprintf(stdout, "Done\n");
+
 	//end of program
 	if(server_on)
 	{
 		pthread_join( thread3, NULL);
 	}
-		
+
 	if(client_on)
 	{
+		pthread_cancel(thread1);
+		pthread_cancel(thread2);
+
 		pthread_join( thread1, NULL);
 		pthread_join( thread2, NULL);
 		tcsetattr(fd,TCSANOW,&oldtio); //set back ols comport settings
+		
 		close(fd);        //close the com port
 		close(sock);		//close the socket
 	}
