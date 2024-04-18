@@ -26,7 +26,7 @@ Thank you */
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyUSB_VELBUS"
-#define IP "127.0.0.1"
+#define IP "192.168.3.85"
 #define _POSIX_SOURCE 1         //POSIX compliant source
 #define FALSE 0
 #define TRUE 1
@@ -40,7 +40,7 @@ int client_on = 1;
 
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 int fd, sock;
-int foreground=0,verbose=4;
+int foreground=1,verbose=2;
 
 volatile sig_atomic_t keep_running = 1;
 
@@ -856,5 +856,5 @@ signal(SIGPIPE, SIG_IGN);
 		close(sock);		//close the socket
 	}
 	
-	exit(EXIT_SUCCESS);
+	exit(EXIT_FAILURE);
 }
